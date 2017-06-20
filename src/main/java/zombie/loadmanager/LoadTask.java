@@ -4,9 +4,12 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Environment;
+import android.text.TextUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
@@ -16,11 +19,14 @@ import java.net.URL;
 public class LoadTask {
     public static final String DEFAULT_LOAD_TASK_KEY = "default_load_task_key";
     private Context mContext;
-    private static String DIR_PATH;
+    private static String GUI_PAGES_DIR_PATH;
+    private static String GUI_ADVERTISEMENT_DIR_PATH;
+    private static String HOME_ADVERTISEMENT_DIR_PATH;
     private static String FILE_PREFIX;
-    private static Suffix FILE_SUFFIX;
+    private LoadType fileLoadType;
     private BaseLoadCallback callback;
     private String iconUrl;
+    private String taskPath = "";
     private int rate = 1;
     private BitmapFactory.Options options;
     private Bitmap bitmap;
@@ -29,9 +35,10 @@ public class LoadTask {
 
     public LoadTask(Context context) {
         mContext = context;
-        DIR_PATH = Environment.getExternalStorageDirectory() + "/" + mContext.getPackageName() + "/pages/";
+        GUI_PAGES_DIR_PATH = Environment.getExternalStorageDirectory() + "/" + mContext.getPackageName() + "/pages/";
+        GUI_ADVERTISEMENT_DIR_PATH = Environment.getExternalStorageDirectory() + "/" + mContext.getPackageName() + "/guiAdvertiment/";
+        HOME_ADVERTISEMENT_DIR_PATH = Environment.getExternalStorageDirectory() + "/" + mContext.getPackageName() + "/homeAdvertiment/";
         FILE_PREFIX = "page";
-        FILE_SUFFIX = Suffix.NUMBER;
     }
 
     /**
@@ -46,24 +53,33 @@ public class LoadTask {
         return FILE_PREFIX;
     }
 
+    public LoadType getType() {
+        return fileLoadType == null ? LoadType.GUI_PAGES : fileLoadType;
+    }
+
     public String getDirPath() {
-        return DIR_PATH;
+        if (getType() == LoadType.GUI_ADVERTIMENT) {
+            taskPath = GUI_ADVERTISEMENT_DIR_PATH;
+        } else if (getType() == LoadType.GUI_PAGES) {
+            taskPath = GUI_PAGES_DIR_PATH;
+        } else if (getType() == LoadType.HOME_ADVERTISEMENT) {
+            taskPath = HOME_ADVERTISEMENT_DIR_PATH;
+        }
+        return TextUtils.isEmpty(taskPath) ? GUI_PAGES_DIR_PATH : taskPath;
     }
 
     protected Context getContext() {
         return mContext;
     }
 
-    /**
-     * 设置文件后缀
-     */
-    public LoadTask setSuffix(Suffix suffix) {
-        FILE_SUFFIX = suffix;
+    public LoadTask setType(LoadType type) {
+        fileLoadType = type;
         return this;
     }
 
+
     public LoadTask setDirPath(String dirPath) {
-        DIR_PATH = dirPath;
+        GUI_PAGES_DIR_PATH = dirPath;
         return this;
     }
 
@@ -89,8 +105,14 @@ public class LoadTask {
             options.inSampleSize = rate;
             options.inJustDecodeBounds = false;
             bitmap = BitmapFactory.decodeStream(is, null, options);
-            File dir = new File(DIR_PATH);
-            File file = new File(DIR_PATH, FILE_PREFIX + "_" + System.currentTimeMillis() + ".png");
+            if (bitmap == null) {
+                byte[] data = readStream(is);
+                if (data != null) {
+                    bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+                }
+            }
+            File dir = new File(getDirPath());
+            File file = new File(getDirPath(), FILE_PREFIX + "_" + System.currentTimeMillis() + ".png");
             if (!dir.exists()) {
                 dir.mkdirs();
             }
@@ -107,6 +129,18 @@ public class LoadTask {
         return bitmap;
     }
 
+    private byte[] readStream(InputStream is) throws IOException {
+        ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int len = 0;
+        while ((len = is.read(buffer)) != -1) {
+            outStream.write(buffer, 0, len);
+        }
+        IOUtils.close(outStream);
+        IOUtils.close(is);
+        return outStream.toByteArray();
+    }
+
     public BaseLoadCallback getCallback() {
         if (callback != null) {
             return callback;
@@ -114,8 +148,8 @@ public class LoadTask {
         return null;
     }
 
-    public enum Suffix {
-        NUMBER, ENGLISH
+    public enum LoadType {
+        GUI_ADVERTIMENT, GUI_PAGES, HOME_ADVERTISEMENT
     }
 
     public void setLoadCallback(BaseLoadCallback callback) {

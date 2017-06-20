@@ -30,11 +30,6 @@ public class GuiLoadConfig {
             task = new LoadTask(context);
         }
 
-        public Builder setSuffix(LoadTask.Suffix suffix) {
-            if (task != null)
-                task.setSuffix(suffix);
-            return this;
-        }
 
         public Builder setPrefix(String prefix) {
             if (task != null)

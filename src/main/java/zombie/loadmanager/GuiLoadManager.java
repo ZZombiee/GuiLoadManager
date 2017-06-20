@@ -14,23 +14,18 @@ import rx.functions.Action0;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
-
 /**
  * Created by guoshengsheng on 2017/6/14.
  */
 public class GuiLoadManager {
-    private static GuiLoadConfig config;
-    private static GuiLoadManager loadManager;
+    private GuiLoadConfig config;
     private List<Bitmap> defaultBitmaps;
     private List<Bitmap> realBitmaps;
     private String[] exeUrl;
-    private int version = -1;
+    private int version = 1;
     private boolean needDownload = false;
     private boolean downloading = false;
 
-    public static GuiLoadManager getInstance() {
-        return loadManager == null ? new GuiLoadManager() : loadManager;
-    }
 
     public GuiLoadManager init(GuiLoadConfig config) {
         this.config = config;
@@ -47,6 +42,12 @@ public class GuiLoadManager {
         return this;
     }
 
+    public GuiLoadManager loadUrl(String urls) {
+        exeUrl = new String[1];
+        exeUrl[0] = urls;
+        return this;
+    }
+
     private void clearDirPages() {
         File dir = new File(config.getTask().getDirPath());
         if (dir.exists() && dir.isDirectory() && dir.listFiles().length > 0) {
@@ -59,7 +60,8 @@ public class GuiLoadManager {
 
     public GuiLoadManager execute() {
         if (defaultBitmaps == null || defaultBitmaps.size() == 0) {
-            throw new RuntimeException("default must not be null or empty");
+            if (config.getTask().getType() == LoadTask.LoadType.GUI_PAGES)
+                throw new RuntimeException("default must not be null or empty");
         }
         realBitmaps = readDirPages().size() == 0 ? defaultBitmaps : realBitmaps;
         needDownload = readDirPages().size() == 0 ? true : needDownload;
@@ -115,6 +117,11 @@ public class GuiLoadManager {
             return realBitmaps;
         }
         return defaultBitmaps;
+    }
+
+    public GuiLoadManager setType(LoadTask.LoadType type) {
+        config.getTask().setType(type);
+        return this;
     }
 
     public GuiLoadManager setVersion(int version) {
