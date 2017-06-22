@@ -19,12 +19,19 @@ import rx.schedulers.Schedulers;
  */
 public class GuiLoadManager {
     private GuiLoadConfig config;
-    private List<Bitmap> defaultBitmaps;
-    private List<Bitmap> realBitmaps;
+    private List<Bitmap> defaultBitmaps = new ArrayList<>();
+    private List<Bitmap> realBitmaps = new ArrayList<>();
     private String[] exeUrl;
     private int version = 1;
     private boolean needDownload = false;
     private boolean downloading = false;
+    private boolean isGreenChannel = false;
+    private boolean downloadComplete = false;
+    private int pageCount = 0;
+    private String GUI_PAGES_COUNT = "page_count";
+    private String GUI_ADVERTISEMENT_COUNT = "gui_advertisement_count";
+    private String HOME_ADVERTISEMENT_COUNT = "home_advertisement_count";
+    private String countName;
 
 
     public GuiLoadManager init(GuiLoadConfig config) {
@@ -58,22 +65,31 @@ public class GuiLoadManager {
         }
     }
 
+    public GuiLoadManager isGreenChannel() {
+        isGreenChannel = true;
+        return this;
+    }
+
     public GuiLoadManager execute() {
         if (defaultBitmaps == null || defaultBitmaps.size() == 0) {
-            if (config.getTask().getType() == LoadTask.LoadType.GUI_PAGES)
+            if (config.getTask().getType() == LoadTask.LoadType.GUI_PAGES && !isGreenChannel)
                 throw new RuntimeException("default must not be null or empty");
         }
-        realBitmaps = readDirPages().size() == 0 ? defaultBitmaps : realBitmaps;
+//        realBitmaps = readDirPages().size() == 0 ? defaultBitmaps : realBitmaps;
+        realBitmaps = readDirPages();
         needDownload = readDirPages().size() == 0 ? true : needDownload;
         if (needDownload && exeUrl != null && exeUrl.length != 0 && version > 0) {
+            downloading = true;
             clearDirPages();
             executeTask();
+        } else {
+            LoadSpUtils.putBoolean(config.getContext(), "nextLoad", false);
         }
         return this;
     }
 
     private void executeTask() {
-        downloading = true;
+        LoadSpUtils.putInt(config.getContext(), getCountName(), exeUrl.length);
         Observable.from(exeUrl)
                 .map(new Func1<String, Bitmap>() {
                     @Override
@@ -92,6 +108,8 @@ public class GuiLoadManager {
                 .subscribe(new Observer<Bitmap>() {
                     @Override
                     public void onCompleted() {
+                        downloadComplete = true;
+                        LoadSpUtils.putBoolean(config.getContext(), "nextLoad", true);
                         if (config.getTask().getCallback() != null)
                             config.getTask().getCallback().loadSuccess();
                     }
@@ -113,15 +131,44 @@ public class GuiLoadManager {
     }
 
     public List<Bitmap> get() {
-        if (realBitmaps != null && realBitmaps.size() > 0) {
-            return realBitmaps;
+        pageCount = LoadSpUtils.getInt(config.getContext(), getCountName(), 0);
+        //正在下载未下载完，返回默认
+        if (downloading && !downloadComplete) {
+            return defaultBitmaps;
         }
-        return defaultBitmaps;
+        //本地有图片
+        if (realBitmaps != null && realBitmaps.size() > 0) {
+            if (realBitmaps.size() == pageCount) {
+                return realBitmaps;
+            } else {
+                //上次未下载完毕，清除残余文件
+                clearDirPages();
+            }
+        }
+        return defaultBitmaps == null ? new ArrayList<Bitmap>() : defaultBitmaps;
     }
 
     public GuiLoadManager setType(LoadTask.LoadType type) {
         config.getTask().setType(type);
+        setCountName();
         return this;
+    }
+
+    private void setCountName() {
+        countName = "";
+        if (config.getTask().getType() == LoadTask.LoadType.GUI_PAGES) {
+            countName = GUI_PAGES_COUNT;
+        } else if (config.getTask().getType() == LoadTask.LoadType.HOME_ADVERTISEMENT) {
+            countName = HOME_ADVERTISEMENT_COUNT;
+        } else if (config.getTask().getType() == LoadTask.LoadType.GUI_ADVERTIMENT) {
+            countName = GUI_ADVERTISEMENT_COUNT;
+        } else {
+            countName = "default";
+        }
+    }
+
+    public String getCountName() {
+        return countName;
     }
 
     public GuiLoadManager setVersion(int version) {
