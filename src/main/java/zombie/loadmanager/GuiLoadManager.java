@@ -110,7 +110,8 @@ public class GuiLoadManager {
                     @Override
                     public void onCompleted() {
                         downloadComplete = true;
-                        LoadSpUtils.putBoolean(config.getContext(), "nextLoad", true);
+                        if (config.getTask().getType() == LoadTask.LoadType.GUI_PAGES)
+                            LoadSpUtils.putBoolean(UIUtils.getContext(), "nextLoad", true);
 						if (callback != null)
                             callback.getResult(executeBitmap);
                         if (config.getTask().getCallback() != null)
