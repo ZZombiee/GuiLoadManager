@@ -111,6 +111,8 @@ public class GuiLoadManager {
                     public void onCompleted() {
                         downloadComplete = true;
                         LoadSpUtils.putBoolean(config.getContext(), "nextLoad", true);
+						if (callback != null)
+                            callback.getResult(executeBitmap);
                         if (config.getTask().getCallback() != null)
                             config.getTask().getCallback().loadSuccess(executeBitmap);
                     }
@@ -138,17 +140,23 @@ public class GuiLoadManager {
         pageCount = LoadSpUtils.getInt(config.getContext(), getCountName(), 0);
         //正在下载未下载完，返回默认
         if (downloading && !downloadComplete) {
+			if (callback != null)
+                callback.getResult(defaultBitmaps);
             return defaultBitmaps;
         }
         //本地有图片
         if (realBitmaps != null && realBitmaps.size() > 0) {
             if (realBitmaps.size() == pageCount) {
+				if (callback != null)
+                    callback.getResult(realBitmaps);
                 return realBitmaps;
             } else {
                 //上次未下载完毕，清除残余文件
                 clearDirPages();
             }
         }
+		if (callback != null)
+            callback.getResult(defaultBitmaps == null ? new ArrayList<Bitmap>() : defaultBitmaps);
         return defaultBitmaps == null ? new ArrayList<Bitmap>() : defaultBitmaps;
     }
 
@@ -197,5 +205,16 @@ public class GuiLoadManager {
             }
         }
         return realBitmaps;
+    }
+	
+	private ManagerCallback callback;
+
+    public GuiLoadManager setResultCallback(ManagerCallback callback) {
+        this.callback = callback;
+        return this;
+    }
+
+    public interface ManagerCallback {
+        void getResult(List<Bitmap> list);
     }
 }
