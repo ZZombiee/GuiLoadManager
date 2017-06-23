@@ -90,6 +90,7 @@ public class GuiLoadManager {
 
     private void executeTask() {
         LoadSpUtils.putInt(config.getContext(), getCountName(), exeUrl.length);
+        final List<Bitmap> executeBitmap = new ArrayList<>();
         Observable.from(exeUrl)
                 .map(new Func1<String, Bitmap>() {
                     @Override
@@ -111,7 +112,7 @@ public class GuiLoadManager {
                         downloadComplete = true;
                         LoadSpUtils.putBoolean(config.getContext(), "nextLoad", true);
                         if (config.getTask().getCallback() != null)
-                            config.getTask().getCallback().loadSuccess();
+                            config.getTask().getCallback().loadSuccess(executeBitmap);
                     }
 
                     @Override
@@ -122,6 +123,9 @@ public class GuiLoadManager {
 
                     @Override
                     public void onNext(Bitmap vo) {
+                    	  executeBitmap.add(vo);
+                        if (config.getTask().getCallback() != null)
+                            config.getTask().getCallback().loadNext(vo);
                     }
                 });
     }

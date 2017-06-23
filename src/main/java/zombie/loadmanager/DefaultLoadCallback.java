@@ -11,4 +11,14 @@ public abstract class DefaultLoadCallback implements BaseLoadCallback {
     public void loadExist(Bitmap[] bitmaps) {
 
     }
+
+    @Override
+    public void loadNext(Bitmap bitmap) {
+
+    }
+
+    @Override
+    public void loadUnknowError(Throwable throwable) {
+
+    }
 }

@@ -11,9 +11,11 @@ public interface BaseLoadCallback {
     int NULL_PAGES = 1003;
     int SAME_PAGES_EXIST = 1004;
 
-    void loadSuccess();
+    void loadSuccess(List<Bitmap> bitmapList);
 
     void loadUnknowError(Throwable throwable);
 
     void loadExist(Bitmap[] bitmaps);
+
+    void loadNext(Bitmap bitmap);
 }
