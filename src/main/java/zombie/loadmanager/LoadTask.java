@@ -3,7 +3,6 @@ package zombie.loadmanager;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.Environment;
 import android.text.TextUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -35,9 +34,9 @@ public class LoadTask {
 
     public LoadTask(Context context) {
         mContext = context;
-        GUI_PAGES_DIR_PATH = Environment.getExternalStorageDirectory() + "/" + mContext.getPackageName() + "/pages/";
-        GUI_ADVERTISEMENT_DIR_PATH = Environment.getExternalStorageDirectory() + "/" + mContext.getPackageName() + "/guiAdvertiment/";
-        HOME_ADVERTISEMENT_DIR_PATH = Environment.getExternalStorageDirectory() + "/" + mContext.getPackageName() + "/homeAdvertiment/";
+        GUI_PAGES_DIR_PATH = mContext.getFilesDir().getAbsolutePath() + "/image" + "/pages/";
+        GUI_ADVERTISEMENT_DIR_PATH = mContext.getFilesDir().getAbsolutePath() + "/image" + "/guiAdvertiment/";
+        HOME_ADVERTISEMENT_DIR_PATH = mContext.getFilesDir().getAbsolutePath() + "/image" + "/homeAdvertiment/";
         FILE_PREFIX = "page";
     }
 
